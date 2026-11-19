@@ -1,108 +1,206 @@
-#include <iostream>  // Библиотека для ввода-вывода (std::cout, std::cin)
-#include <iomanip>   // Библиотека для форматирования вывода (std::setw, чтобы матрица выводилась ровно)
-#include <cstdlib>   // Библиотека для функций генерации случайных чисел (rand, srand)
-#include <ctime>     // Библиотека для работы со временем (нужна для инициализации генератора чисел)
+#include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <ctime>
+#include <windows.h>
 
-void task1() {
-    std::cout << "=== Задача 1 ===\n";
-    const int ROWS = 6;     // Задаем константу для количества строк (6)
-    const int COLS = 4;     // Задаем константу для количества столбцов (4)
-    int matrix[ROWS][COLS]; // Объявляем статическую двумерную матрицу 6x4[cite: 2]
+const int ROWS = 6;
+const int COLS = 4;
 
-    std::cout << "Исходная матрица 6x4:\n";
-    for (int i = 0; i < ROWS; ++i) {        // Проходим по каждой строке
-        for (int j = 0; j < COLS; ++j) {    // Проходим по каждому столбцу в строке
-            matrix[i][j] = rand() % 6;      // Заполняем ячейку случайным числом от 0 до 5
-            std::cout << std::setw(4) << matrix[i][j]; // Выводим число, выделяя под него 4 символа для ровности
-        }
-        std::cout << "\n";                  // Переход на новую строку после вывода целой строки матрицы
-    }
-
-    int count_cols = 0; // Переменная для подсчета столбцов, в которых нет нулей
-    std::cout << "Номера столбцов без нулевых элементов (индексация с 1): ";
-    
-    for (int j = 0; j < COLS; ++j) {        // Идем по СТОЛБЦАМ (это внешний цикл)
-        bool has_zero = false;              // Флаг: предполагаем, что нулей в столбце нет
-        for (int i = 0; i < ROWS; ++i) {    // Идем по элементам текущего столбца (по строкам)
-            if (matrix[i][j] == 0) {        // Если встретили 0...
-                has_zero = true;            // ...меняем флаг на true
-                break;                      // ...и прерываем внутренний цикл (дальше искать нет смысла)
-            }
-        }
-        
-        if (!has_zero) {                    // Если после проверки столбца флаг остался false (нулей не было)
-            std::cout << (j + 1) << " ";    // Выводим номер столбца (j+1, так как для человека счет с 1)[cite: 2]
-            count_cols++;                   // Увеличиваем счетчик таких столбцов[cite: 2]
-        }
-    }
-    
-    std::cout << "\nКоличество таких столбцов: " << count_cols << "\n\n"; // Выводим итоговое количество
+void fillMatrix(int* p, int n) {
+    std::cout << "Введите " << n << " чисел: ";
+    for (int* q = p; q < p + n; q++)
+        std::cin >> *q;
 }
 
+void fillMatrix(int* p, int n, const char* fileName) {
+    std::ifstream fin(fileName);
+    for (int* q = p; q < p + n; q++)
+        fin >> *q;
+}
+
+void fillMatrix(int* p, int n, int left, int right) {
+    if (left > right) {
+        int tmp = left;
+        left = right;
+        right = tmp;
+    }
+    for (int* q = p; q < p + n; q++)
+        *q = left + rand() % (right - left + 1);
+}
+
+void printMatrix(const int* p) {
+    std::cout << "Матрица:\n";
+    for (const int* q = p; q < p + ROWS * COLS; q++) {
+        std::cout << *q << " ";
+        if ((q - p + 1) % COLS == 0)
+            std::cout << "\n";
+    }
+}
+
+bool hasZeroInCol(const int* p, int col) {
+    for (int i = 0; i < ROWS; i++)
+        if (*(p + i * COLS + col) == 0) return true;
+    return false;
+}
+
+void findColsWithoutZeros(const int* p) {
+    int count = 0;
+    std::cout << "Столбцы без нулей: ";
+    for (int j = 0; j < COLS; j++)
+        if (!hasZeroInCol(p, j)) {
+            std::cout << j + 1 << " ";
+            count++;
+        }
+    std::cout << "\n";
+    std::cout << "Количество: " << count << "\n";
+}
+
+void chooseAndFill(int* p, int n) {
+    int choice;
+    std::cout << "Как заполнить? 1 - клавиатура, 2 - файл, 3 - случайно: ";
+    std::cin >> choice;
+    if (choice == 1) fillMatrix(p, n);
+    if (choice == 2) {
+        char name[100];
+        std::cout << "Имя файла: ";
+        std::cin >> name;
+        fillMatrix(p, n, name);
+    }
+    if (choice == 3) {
+        int left, right;
+        std::cout << "Левая граница: "; std::cin >> left;
+        std::cout << "Правая граница: "; std::cin >> right;
+        fillMatrix(p, n, left, right);
+    }
+}
+
+void task1() {
+    int a[ROWS][COLS];
+    int* p = &a[0][0];
+
+    chooseAndFill(p, ROWS * COLS);
+
+    printMatrix(p);
+    findColsWithoutZeros(p);
+}
+
+int** createMatrix(int n, int m) {
+    int** matrix = new int*[n];
+    for (int i = 0; i < n; i++)
+        matrix[i] = new int[m];
+    return matrix;
+}
+
+void freeMatrix(int** matrix, int n) {
+    for (int i = 0; i < n; i++)
+        delete[] matrix[i];
+    delete[] matrix;
+}
+
+void fillDynFromKeyboard(int** matrix, int n, int m) {
+    std::cout << "Введите " << n * m << " чисел: ";
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < m; j++)
+            std::cin >> matrix[i][j];
+}
+
+void fillDynFromFile(int** matrix, int n, int m) {
+    char name[100];
+    std::cout << "Имя файла: ";
+    std::cin >> name;
+    std::ifstream fin(name);
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < m; j++)
+            fin >> matrix[i][j];
+}
+
+void fillDynRandom(int** matrix, int n, int m) {
+    int left, right;
+    std::cout << "Левая граница: "; std::cin >> left;
+    std::cout << "Правая граница: "; std::cin >> right;
+    if (left > right) {
+        int tmp = left;
+        left = right;
+        right = tmp;
+    }
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < m; j++)
+            matrix[i][j] = left + rand() % (right - left + 1);
+}
+
+void fillDynamic(int** matrix, int n, int m) {
+    int choice;
+    std::cout << "Как заполнить? 1 - клавиатура, 2 - файл, 3 - случайно: ";
+    std::cin >> choice;
+    if (choice == 1) fillDynFromKeyboard(matrix, n, m);
+    if (choice == 2) fillDynFromFile(matrix, n, m);
+    if (choice == 3) fillDynRandom(matrix, n, m);
+}
+
+void printDynamic(int** matrix, int n, int m) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++)
+            std::cout << matrix[i][j] << " ";
+        std::cout << "\n";
+    }
+}
+
+int countNeg(int* row, int m) {
+    int count = 0;
+    for (int* q = row; q < row + m; q++)
+        if (*q < 0) count++;
+    return count;
+}
+
+void swapRows(int** first, int** second) {
+    int* temp = *first;
+    *first = *second;
+    *second = temp;
+}
+
+void sortRows(int** matrix, int n, int m) {
+    for (int i = 0; i < n - 1; i++)
+        for (int j = 0; j < n - i - 1; j++)
+            if (countNeg(matrix[j], m) < countNeg(matrix[j + 1], m))
+                swapRows(&matrix[j], &matrix[j + 1]);
+}
 
 void task2() {
-    std::cout << "=== Задача 2 ===\n";
-    int rows, cols;
-    std::cout << "Введите количество строк: ";
-    std::cin >> rows;                               // Считываем количество строк
-    std::cout << "Введите количество столбцов: ";
-    std::cin >> cols;                               // Считываем количество столбцов
+    int n, m;
+    std::cout << "Сколько строк: "; 
+    std::cin >> n;
+    std::cout << "Сколько столбцов: "; 
+    std::cin >> m;
 
-    // --- Выделение памяти ---
-    int** matrix = new int*[rows];                  // Создаем массив указателей на строки
-    for (int i = 0; i < rows; ++i) {
-        matrix[i] = new int[cols];                  // Для каждой строки выделяем память под элементы (столбцы)
-    }
+    int** matrix = createMatrix(n, m);
+    fillDynamic(matrix, n, m);
 
-    std::cout << "Исходная матрица:\n";
-    int* neg_counts = new int[rows];                // Динамический массив для хранения количества отрицательных чисел в каждой строке
-    
-    // --- Заполнение и подсчет ---
-    for (int i = 0; i < rows; ++i) {
-        neg_counts[i] = 0;                          // Изначально количество отрицательных элементов в строке 'i' равно 0
-        for (int j = 0; j < cols; ++j) {
-            matrix[i][j] = (rand() % 11) - 5;       // Генерируем числа от -5 до +5
-            std::cout << std::setw(4) << matrix[i][j];
-            if (matrix[i][j] < 0) {                 // Если число меньше нуля...
-                neg_counts[i]++;                    // ...увеличиваем счетчик для этой строки[cite: 2]
-            }
-        }
-        std::cout << " | Отрицательных: " << neg_counts[i] << "\n"; // Выводим статистику по строке
-    }
+    std::cout << "Матрица:\n";
+    printDynamic(matrix, n, m);
 
-    // --- Сортировка (метод Пузырька) ---
-    // Этот метод переставляет соседние элементы, если они стоят в неправильном порядке.
-    // Он "устойчивый", поэтому при равенстве отрицательных чисел порядок строк не изменится[cite: 2].
-    for (int i = 0; i < rows - 1; ++i) {
-        for (int j = 0; j < rows - i - 1; ++j) {
-            if (neg_counts[j] < neg_counts[j + 1]) { // Нам нужно по убыванию. Если текущий меньше следующего...
-                
-                // 1. Меняем местами счетчики
-                int temp_count = neg_counts[j];
-                neg_counts[j] = neg_counts[j + 1];
-                neg_counts[j + 1] = temp_count;
-                
-                // 2. Меняем местами сами строки матрицы (переставляем только указатели, а не элементы)[cite: 2]
-                int* temp_row = matrix[j];
-                matrix[j] = matrix[j + 1];
-                matrix[j + 1] = temp_row;
-            }
-        }
-    }
+    sortRows(matrix, n, m);
 
-    // --- Вывод результата ---
-    std::cout << "\nМатрица после сортировки строк:\n";
-    for (int i = 0; i < rows; ++i) {
-        for (int j = 0; j < cols; ++j) {
-            std::cout << std::setw(4) << matrix[i][j];
-        }
-        std::cout << " | Отрицательных: " << neg_counts[i] << "\n";
-    }
+    std::cout << "После сортировки:\n";
+    printDynamic(matrix, n, m);
 
-    // --- Очистка памяти (обязательно для динамических массивов во избежание утечек) ---
-    delete[] neg_counts;                    // Удаляем массив счетчиков
-    for (int i = 0; i < rows; ++i) {
-        delete[] matrix[i];                 // Удаляем каждую строку матрицы
+    freeMatrix(matrix, n);
+}
+
+int main() {
+    SetConsoleCP(65001);
+    SetConsoleOutputCP(65001);
+    srand(time(0));
+    int menu = 0;
+
+    while (menu != 3) {
+        std::cout << "\n";
+        std::cout << "1 - статическая матрица\n";
+        std::cout << "2 - динамическая матрица\n";
+        std::cout << "3 - выход\n";
+        std::cin >> menu;
+        if (menu == 1) task1();
+        if (menu == 2) task2();
     }
-    delete[] matrix;                        // Удаляем массив указателей на строки
+    return 0;
 }
